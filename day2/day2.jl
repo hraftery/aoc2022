@@ -6,21 +6,10 @@ inp = readdlm("input.txt")
 #inp = permutedims(inp)
 # Turns out we can just use "eachrow"
 
-SCORE = Dict("X" => 1,
-             "Y" => 2,
-             "Z" => 3)
-
-WINS =  Dict("A" => "Y",
-             "B" => "Z",
-             "C" => "X")
-
-DRAWS = Dict("A" => "X",
-             "B" => "Y",
-             "C" => "Z")
-
-LOSSES= Dict("A" => "Z",
-             "B" => "X",
-             "C" => "Y")
+SCORE = Dict("X" => 1,   "Y" => 2,   "Z" => 3)
+WINS =  Dict("A" => "Y", "B" => "Z", "C" => "X")
+DRAWS = Dict("A" => "X", "B" => "Y", "C" => "Z")
+LOSSES= Dict("A" => "Z", "B" => "X", "C" => "Y")
 
 function scoreround1(r)
     score = SCORE[r[2]]
