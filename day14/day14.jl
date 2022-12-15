@@ -94,6 +94,7 @@ function fallsto(cave, pt)
     end
 end
 
+
 function part1(cave)
     i = 0
     while true
@@ -107,19 +108,31 @@ function part1(cave)
         cave[s.y, s.x] = sand
         i += 1
     end
-    return i
+end
+
+function part2(cave)
+    (rows, cols) = size(cave)
+
+    floorwidth = cols*2 # close enough to -inf:inf for our purposes
+    I,J,V = findnz(cave)
+    cave = sparse([I ; fill(rows+2, floorwidth)], [J ; 1:floorwidth], [V ; fill(rock, floorwidth)])
+    
+    i = 0
+    while true
+        s = Point(500, 0)
+
+        s = fallsto(cave, s)
+        if isnothing(s)
+            error("Fell through floor?")
+        elseif s == Point(500, 0)
+            return i+1
+        end
+    
+        cave[s.y, s.x] = sand
+        i += 1
+    end
 end
 
 
 println("Part 1: " * string(part1(cave)))
-
-
-function testpart1(cave)
-    s = Point(10, 0)
-
-    s = fallsto(cave, s)
-    
-    cave[s.y, s.x] = sand
-    
-    cave
-end
+println("Part 2: " * string(part2(cave)))
