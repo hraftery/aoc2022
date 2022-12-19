@@ -106,8 +106,9 @@ function part2(scan::Vector{Report}, testcase = false)
     return Point((pt.x + pt.y)/2, (pt.x - pt.y)/2)
 end
 
-function plot_test_space()
-    plot(-10:50,-30:30)
+function plot_space(limit = 20)
+    plot([(-10, -10 - limit), (10 + 2*limit, 10 + limit)],
+         legend = false)
     plot_rect.(space)
     plot!()
 end
