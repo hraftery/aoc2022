@@ -56,9 +56,15 @@ let #this is a trick to create static local variables for moveandturn: https://s
         nextvis = [i for i in 1:length(valves) if i != vi &&
                                                 valves[i].flowrate != 0 &&
                                                 i ∉ opened]
-        if(isempty(nextvis)) #no point going anywhere, we now know our fate, so record it.
+        
+        if nextt <= 0 ||     #oops, one step too far, or
+           isempty(nextvis)  #no point going anywhere, we now know our fate, so record it.
             lock(results_lock) do
-                results[nextOpened] = nextp
+                if nextt <= 0
+                    results[opened] = p # could be redundant. oh well.
+                else
+                    results[nextOpened] = nextp
+                end
                 if length(results) % 1_000_000 == 0
                     @show length(results)
                 end
@@ -79,5 +85,5 @@ let #this is a trick to create static local variables for moveandturn: https://s
     end
 end
 
-results = part1(true)
+results = part1()
 @show findmax(results)
