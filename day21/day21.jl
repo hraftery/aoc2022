@@ -1,3 +1,5 @@
+using Printf
+
 mutable struct Operation
     a :: String
     op :: String
@@ -81,16 +83,25 @@ function part2(testcase)
     # Right! Now m = -38.23378 and x = 3715798283781.1005859375.
     # Still not precise enough! Meh, no longer curious.
 
+    m = -2944.0/77.0
+    x = ((l0 == l1 ? l0 : r0) - b) / m
+
     return x
 end
 
 function simplifyleaves(monkeys, key)
     val = monkeys[key]
-    if isa(val, Int)
+    if isa(val, Float64)
         return # nothing more to do
-    elseif isa(monkeys[val.a], Int) && isa(monkeys[val.b], Int)
-        expr = string(monkeys[val.a]) * val.op * string(monkeys[val.b])
-        monkeys[key] = trunc(Int, eval(Meta.parse(expr))) # simplify!
+    elseif isa(monkeys[val.a], Float64) && isa(monkeys[val.b], Float64)
+        if val.a == "humn"
+            simplifyleaves(monkeys, val.b)
+        elseif val.b == "humn"
+            simplifyleaves(monkeys, val.a)
+        else
+            expr = string(monkeys[val.a]) * val.op * string(monkeys[val.b])
+            monkeys[key] = eval(Meta.parse(expr))# trunc(Int, eval(Meta.parse(expr))) # simplify!
+        end
     else
         simplifyleaves(monkeys, val.a)
         simplifyleaves(monkeys, val.b)
@@ -99,4 +110,4 @@ end
 
 testcase = false
 println("Part 1: " * string(part1(testcase)))
-println("Part 2: " * string(part2(testcase)))
+@printf("Part 2: %.0f\n", part2(testcase))
