@@ -1,5 +1,3 @@
-using DataStructures
-
 const Loc = Tuple{Int, Int} # row, column ordering
 const Locs = Set{Loc}
 @enum Dir right down left up
@@ -85,25 +83,56 @@ function steptime(v :: Valley)
 end
 
 function findpath(curloc :: Loc, valley :: Valley)
-  # Run DFS
-  q = Queue{Tuple{Loc, Valley, Vector{Loc}}}()  # node queue: (current location, current valley, path history)
-  enqueue!(q, (curloc, valley, [])) # weird that Queue requires types and can't be given initial contents?
-	
-	while !isempty(q) # could be replaced by "true"
-		curloc, valley, history = dequeue!(q)
-		
-    nextHistory = [history; curloc]
-    nextValley = steptime(valley)
-    
-		if isend(neighbour(curloc, down), valley) # Then we can exit the valley,
-      return nextHistory                      # so we're done.
-    end
+  # Run DFS using a single-threaded frontier approach. So instead of a queue of nodes to visit, we
+  # build a set of nodes representing the next frontier, and switch to it at the end of the current.
+  # Note we actually use a dict so only the node location is used as the key for uniqueness checks.
+  # Making the frontier unique makes **all** the difference to runtime complexity.
+
+  # Start with just the start node.
+  nextFrontier = Dict([(curloc, [curloc])]) # node dict: (current location => path history).
+  
+  # pre-calculate all future valleys to save clogging up the queue
+  valleys = [valley]
+  for _ ∈ Base.OneTo(lcm(valley.rows, valley.cols)-1) # after that, they just start repeating
+    push!(valleys, steptime(last(valleys)))
+  end
+
+  maxdist = 0
+
+	while !isempty(nextFrontier)
+    frontier = nextFrontier
+    nextFrontier = typeof(nextFrontier)() # start fresh
+    nextValley = nothing # will be set in first loop iteration below
+
+    for (curloc, history) in frontier
+      # Step 1: create next state
+      nextHistory = [history; curloc]
+      if isnothing(nextValley) # will be same for all nodes in frontier, so set once
+        nextValley = valleys[mod1(length(nextHistory)+1, lastindex(valleys))]
+      end
+
+      # Step 2: check if we can exit the valley.
+      if isend(neighbour(curloc, down), valley)
+        return nextHistory                      # If so, get outta here.
+      end
+
+      # Step 3: take Manhatten distance as rough indication of progress towards goal.
+      dist = sum(curloc)
+      if dist > maxdist
+        maxdist = dist
+#        @show (curloc, length(history))
+      elseif dist < maxdist - 15 # try pruning searches that are X units behind the front runners
+        continue # Honestly, not a big time impact. But has some space impact.
+      end
  
-    for nextMove in filter(l -> isclear(l, nextValley), [curloc; neighbours(curloc)])
-      # Oh nice, immutability means they can all safely share the same nextValley
-      enqueue!(q, (nextMove, nextValley, nextHistory))
+      # Step 4: add neighbours to next frontier
+      for nextMove in filter(l -> isclear(l, nextValley), [curloc; neighbours(curloc)])
+        # Oh nice, immutability means they can all safely share the same nextValley, so don't include it.
+        get!(nextFrontier, nextMove, nextHistory) # Despite the name, adds nextMove if it doesn't exist.
+      end
     end
 	end
+  error("Path not found")
 end
 
 function part1(testcase)
@@ -112,18 +141,21 @@ function part1(testcase)
 
   path = findpath(curloc, valley)
 
-  for loc in path
-    show(valley, loc)
-    println("")
-    valley = steptime(valley)
+  if testcase
+    for loc in path
+      show(valley, loc)
+      println("")
+      valley = steptime(valley)
+    end
   end
 
   return length(path)
 end
 
-testcase = true
+testcase = false
 println("Part 1: " * string(part1(testcase)))
 #println("Part 2: " * string(part2(testcase)))
 
-#@time part1(testcase)
+@time part1(testcase)
 #@time part2(testcase)
+
