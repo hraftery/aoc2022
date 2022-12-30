@@ -5,6 +5,7 @@ const DirChars  = ">v<^"
 index(e :: Enum) = Int(e) + 1
 toChar(d :: Dir) = DirChars[index(d)]
 toDir(c :: Char) = Dir(findfirst(c, DirChars)-1)
+const Opposites = Dict(right => left, down => up, left => right, up => down)
 const Blizzards = Tuple{Locs, Locs, Locs, Locs}
 EmptyBlizzards() = (Locs(), Locs(), Locs(), Locs()) # weirdly necessary?
 
@@ -113,7 +114,7 @@ function findpath(curloc :: Loc, valley :: Valley)
 
       # Step 2: check if we can exit the valley.
       if isend(neighbour(curloc, down), valley)
-        return nextHistory                      # If so, get outta here.
+        return (nextHistory, nextValley)              # If so, get outta here.
       end
 
       # Step 3: take Manhatten distance as rough indication of progress towards goal.
@@ -139,7 +140,7 @@ function part1(testcase)
   valley = parseinput(testcase)
   curloc = (0, 1) # start just above the top left corner
 
-  path = findpath(curloc, valley)
+  path, _ = findpath(curloc, valley)
 
   if testcase
     for loc in path
@@ -152,10 +153,43 @@ function part1(testcase)
   return length(path)
 end
 
+function rotate180(v :: Valley)
+  # Rotate all blizzard locations
+  bs = [Set([(1 + v.rows - r, 1 + v.cols - c) for (r,c) in locs]) for locs in v.blizzards]
+  # Then swap left<->right and up<->down
+  return Valley(v.rows, v.cols, Tuple(bs[[index(Opposites[d]) for d in instances(Dir)]]))
+end
+
+function part2(testcase)
+  pathlengths = Int[]
+
+  valley = parseinput(testcase)
+  curloc = (0, 1) # start just above the top left corner
+
+  path, valley = findpath(curloc, valley)
+  push!(pathlengths, length(path))
+
+  # Now to go back, we can restart the search using the current valley, because any
+  # alternate paths are equivalent to following the optimal path and then staying put.
+  # So just rotate the current valley 180° and go again.
+  valley = rotate180(valley)
+  curloc = (0, 1)
+  path, valley = findpath(curloc, valley)
+  push!(pathlengths, length(path))
+
+  # And one more time back the other way
+  valley = rotate180(valley)
+  curloc = (0, 1)
+  path, valley = findpath(curloc, valley)
+  push!(pathlengths, length(path))
+
+  return sum(pathlengths)
+end
+
+
 testcase = false
 println("Part 1: " * string(part1(testcase)))
-#println("Part 2: " * string(part2(testcase)))
+println("Part 2: " * string(part2(testcase)))
 
 @time part1(testcase)
-#@time part2(testcase)
-
+@time part2(testcase)
